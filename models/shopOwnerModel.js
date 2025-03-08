@@ -134,6 +134,12 @@ const ShopOwnerSchema = new Schema(
         ref: "Appointments",
       },
     ],
+    reviews: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "reviews",
+      },
+    ],
   },
   {
     timestamps: true,

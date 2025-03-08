@@ -12,10 +12,11 @@ const AppointmentSchema = new Schema(
     description: { type: String },
     status: {
       type: String,
-      enum: ["completed", "pending","failed"],
+      enum: ["completed", "pending", "failed"],
       default: "pending",
     },
     startTime: { type: String },
+    doctorId: { type: mongoose.Schema.Types.ObjectId, ref: "petDoctors" },
     endTime: { type: String },
     subject: { type: String },
     isScheduled: { type: Boolean, default: false },
@@ -24,13 +25,14 @@ const AppointmentSchema = new Schema(
       lastName: { type: String },
       email: { type: String },
       phoneNo: { type: String },
+      profilePic: { type: String },
     },
     appointmentDate: { type: String },
-    resources:{
-      petId:{
+    resources: {
+      petId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "shopPets",
-      }
+      },
     },
   },
   { timestamps: true }

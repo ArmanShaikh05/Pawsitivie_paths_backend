@@ -7,6 +7,8 @@ import { ShopOwner } from "../models/shopOwnerModel.js";
 import { ShopPets } from "../models/shopPetsModel.js";
 import { Appointments } from "../models/appointmentModel.js";
 import mongoose from "mongoose";
+import { User } from "../models/userModels.js";
+import { Review } from "../models/reviewModel.js";
 
 const createNewShop = async (req, res, next) => {
   try {
@@ -61,7 +63,14 @@ const getShopDetailsByUserId = async (req, res, next) => {
     const { shopId } = req.query;
     const shop = await ShopOwner.findOne({ userId: shopId })
       .populate("shopPets")
-      .populate("shopProducts");
+      .populate("shopProducts")
+      .populate({
+        path: "reviews",
+        populate: {
+          path: "userId",
+          select: "profilePic userName",
+        },
+      });
 
     if (!shop)
       return res.status(400).json({
@@ -69,9 +78,16 @@ const getShopDetailsByUserId = async (req, res, next) => {
         message: "shop not found",
       });
 
+    const totalReview =
+      shop?.reviews?.reduce((sum, review) => sum + review.rating, 0) || 0;
+    const overallReview = shop?.reviews?.length
+      ? (totalReview / shop.reviews.length).toFixed(1)
+      : "0.0";
+
     res.status(200).json({
       success: true,
       data: shop,
+      overallReview,
     });
   } catch (error) {
     res.json({
@@ -341,13 +357,13 @@ const getShopChartData = async (req, res, next) => {
       {
         $match: {
           shopRecieverId: new mongoose.Types.ObjectId(shopId), // Ensure correct type
-          status: "completed"
+          status: "completed",
         },
       },
       {
         $addFields: {
-          appointmentDateConverted: { $toDate: "$appointmentDate" } // Convert to Date
-        }
+          appointmentDateConverted: { $toDate: "$appointmentDate" }, // Convert to Date
+        },
       },
       {
         $group: {
@@ -356,7 +372,7 @@ const getShopChartData = async (req, res, next) => {
         },
       },
       {
-        $sort: { "_id": 1 }, // Sort months in order
+        $sort: { _id: 1 }, // Sort months in order
       },
     ]);
 
@@ -376,18 +392,17 @@ const getShopChartData = async (req, res, next) => {
     ];
 
     const yearlyPetAdoptedData = months.map((month, index) => {
-      const monthData = result.find(item => item._id === index + 1);
+      const monthData = result.find((item) => item._id === index + 1);
       return {
         timePeriod: month,
-        petsAdopted: monthData ? monthData.appointmentsCompleted : 0 // Default to 0 if no data
+        petsAdopted: monthData ? monthData.appointmentsCompleted : 0, // Default to 0 if no data
       };
     });
-
 
     // MONTHLY PET ADOPTION DATA
     const currentDate = new Date();
     const year = currentDate.getFullYear();
-    const month = currentDate.getMonth() + 1; 
+    const month = currentDate.getMonth() + 1;
     // console.log(currentDate.getMonth() + 1)
     // console.log(new Date(`${year}-${month}-01`))
     // console.log(new Date(`${year}-${month + 1}-01`))
@@ -414,7 +429,9 @@ const getShopChartData = async (req, res, next) => {
       {
         $addFields: {
           weekOfMonth: {
-            $ceil: { $divide: [{ $dayOfMonth: "$appointmentDateConverted" }, 7] },
+            $ceil: {
+              $divide: [{ $dayOfMonth: "$appointmentDateConverted" }, 7],
+            },
           },
         },
       },
@@ -425,20 +442,19 @@ const getShopChartData = async (req, res, next) => {
         },
       },
       {
-        $sort: { "_id": 1 }, // Ensure weeks are sorted in order
+        $sort: { _id: 1 }, // Ensure weeks are sorted in order
       },
     ]);
     const weeks = ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5"];
 
     // Ensure all weeks are included in the response
     const monthlyPetAdoptionData = weeks.map((week, index) => {
-      const weekData = monthResults.find(item => item._id === index + 1);
+      const weekData = monthResults.find((item) => item._id === index + 1);
       return {
         timePeriod: week,
-        petsAdopted: weekData ? weekData.completedAppointments : 0 // Default to 0 if no data
+        petsAdopted: weekData ? weekData.completedAppointments : 0, // Default to 0 if no data
       };
     });
-
 
     // WEEKLY PET ADOPTION DATA
     const startOfWeek = new Date(currentDate);
@@ -455,7 +471,7 @@ const getShopChartData = async (req, res, next) => {
           status: "completed",
         },
       },
-      
+
       {
         $addFields: {
           adoptionDateConverted: { $toDate: "$appointmentDate" }, // Convert to Date type
@@ -498,7 +514,58 @@ const getShopChartData = async (req, res, next) => {
       petCategoriesData,
       yearlyPetAdoptedData,
       monthlyPetAdoptionData,
-      weeklyPetAdoptionData
+      weeklyPetAdoptionData,
+    });
+  } catch (error) {
+    console.log(error);
+    res.json({
+      success: false,
+    });
+  }
+};
+
+export const postShopReview = async (req, res, next) => {
+  try {
+    const { userId, shopOwnerId, rating, reviewTitle, reviewDesc, review } =
+      req.body;
+
+    const user = User.findById(userId);
+    if (!user)
+      return res.status(400).json({
+        success: false,
+        message: "User not found",
+      });
+
+    const shopOwner = ShopOwner.findById(shopOwnerId);
+    if (!shopOwner)
+      return res.status(400).json({
+        success: false,
+        message: "shopOwner not found",
+      });
+
+    const newReview = await Review.create({
+      title: reviewTitle,
+      description: reviewDesc,
+      review,
+      rating,
+      userId,
+    });
+
+    await shopOwner.updateOne({
+      $push: {
+        reviews: newReview._id,
+      },
+    });
+
+    await user.updateOne({
+      $push: {
+        reviews: newReview._id,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Review posted successfully",
     });
   } catch (error) {
     console.log(error);

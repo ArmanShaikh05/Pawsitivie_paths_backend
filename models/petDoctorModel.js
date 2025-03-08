@@ -58,9 +58,9 @@ const PetDoctorSchema = new Schema(
       type: Number,
     },
 
-    availableForWork:{
-      type:Boolean,
-      default:true,
+    availableForWork: {
+      type: Boolean,
+      default: true,
     },
 
     availability: {
@@ -122,6 +122,16 @@ const PetDoctorSchema = new Schema(
         ref: "Appointments",
       },
     ],
+
+    totalRevenue: {
+      type: Number,
+    },
+    completedAppointments: {
+      type: Number,
+    },
+    pendingAppointments: {
+      type: Number,
+    },
   },
   {
     timestamps: true,

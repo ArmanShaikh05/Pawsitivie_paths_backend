@@ -384,7 +384,7 @@ const updateOwnedPet = async (req, res, next) => {
 
 const getShops = async (req, res, next) => {
   try {
-    const Shops = await ShopOwner.find();
+    const Shops = await ShopOwner.find().populate("reviews");
 
     if (!Shops)
       return res.status(400).json({

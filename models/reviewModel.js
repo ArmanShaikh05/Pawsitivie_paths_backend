@@ -16,8 +16,12 @@ const ReviewSchema = new Schema(
       type: Number,
     },
     userId: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "users",
+    },
+    doctorId:{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "petDoctors",
     }
   },
   {

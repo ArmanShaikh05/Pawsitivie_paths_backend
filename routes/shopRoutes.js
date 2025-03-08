@@ -1,5 +1,5 @@
 import express from "express";
-import { addShopPet, createNewShop, editShopDetails, getShopChartData, getShopDetails, getShopDetailsByUserId } from "../controllers/shopControllers.js";
+import { addShopPet, createNewShop, editShopDetails, getShopChartData, getShopDetails, getShopDetailsByUserId, postShopReview } from "../controllers/shopControllers.js";
 import { uploadMiddleware } from "../middlewares/multer.js";
 
 const router = express.Router()
@@ -15,6 +15,8 @@ router.get("/get-details-by-userId", getShopDetailsByUserId)
 router.post("/add-pet",uploadMiddleware.array("files",10),addShopPet)
 
 router.get("/chart-details",getShopChartData)
+
+router.post("/post-review",postShopReview)
 
 
 export default router

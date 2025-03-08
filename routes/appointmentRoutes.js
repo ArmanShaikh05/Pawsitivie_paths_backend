@@ -5,6 +5,7 @@ import {
   appointmentFailed,
   createShopAppointment,
   getEventsDetails,
+  getPetDoctorAppointments,
   getShopAppointmentDetails,
   getUserpAppointmentDetails,
   rejectAppointment,
@@ -14,6 +15,8 @@ const router = new express.Router();
 router.post("/create-shop-appointment", createShopAppointment);
 
 router.get("/get-shop-appointments", getShopAppointmentDetails);
+
+router.get("/get-doctor-appointments", getPetDoctorAppointments);
 
 router.get("/get-user-appointments", getUserpAppointmentDetails);
 

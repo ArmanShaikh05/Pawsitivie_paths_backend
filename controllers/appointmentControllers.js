@@ -1,6 +1,7 @@
 import { PET_ADOPTION } from "../data/constants.js";
 import { Appointments } from "../models/appointmentModel.js";
 import { Notifications } from "../models/notificationsModel.js";
+import { PetDoctors } from "../models/petDoctorModel.js";
 import { ShopOwner } from "../models/shopOwnerModel.js";
 import { ShopPets } from "../models/shopPetsModel.js";
 import { User } from "../models/userModels.js";
@@ -163,6 +164,39 @@ const getShopAppointmentDetails = async (req, res, next) => {
   }
 };
 
+const getPetDoctorAppointments = async (req, res, next) => {
+  try {
+    const { doctorId } = req.query;
+
+    const doctor = await PetDoctors.findById(doctorId);
+    if (!doctor)
+      return res.status(400).json({
+        success: false,
+        message: "No doctor found",
+      });
+
+    const appointments = await Appointments.find({
+      doctorId: doctorId,
+    })
+      .populate("doctorId")
+      .sort({ appointmentDate: 1 });
+
+    if (!appointments || appointments.length === 0)
+      return res.status(400).json({
+        success: false,
+        message: "No appointments found",
+      });
+
+    res.status(200).json({ success: true, data: appointments });
+  } catch (error) {
+    console.error("Error in getOrderDetails:", error);
+    res.status(400).json({
+      success: false,
+      message: "An error occurred while fetching appointments",
+    });
+  }
+};
+
 const getUserpAppointmentDetails = async (req, res, next) => {
   try {
     const { userId } = req.query;
@@ -188,6 +222,7 @@ const getUserpAppointmentDetails = async (req, res, next) => {
         path: "shopRecieverId",
         select: "shopName shopAddress phone",
       })
+      .populate("doctorId")
       .sort({ appointmentDate: 1 });
 
     if (!appointments || appointments.length === 0)
@@ -430,6 +465,18 @@ const getEventsDetails = async (req, res, next) => {
           path: "petId",
         },
       });
+    } else if (role === "petDoctor") {
+      const doctor = await PetDoctors.findById(userId);
+      if (!doctor)
+        return res.status(400).json({
+          success: false,
+          message: "No doctor found",
+        });
+
+      appointments = await Appointments.find({
+        doctorId: userId,
+        isScheduled: true,
+      });
     } else {
       const user = await User.findById(userId);
       if (!user)
@@ -451,7 +498,7 @@ const getEventsDetails = async (req, res, next) => {
         .populate({
           path: "shopRecieverId",
           select: "shopName shopAddress phone",
-        });
+        }).populate("doctorId");
     }
 
     if (!appointments || appointments.length === 0)
@@ -495,12 +542,13 @@ const appointmentCompleted = async (req, res, next) => {
     });
 
     if (appointment?.subject.includes("Adoption")) {
-      
       const totalPetsAdopted = await Appointments.find({
         shopRecieverId: appointment?.shopRecieverId,
         status: "completed",
-      }).countDocuments().exec();
-      console.log(totalPetsAdopted)
+      })
+        .countDocuments()
+        .exec();
+      console.log(totalPetsAdopted);
       const shop = await ShopOwner.findById(appointment?.shopRecieverId);
       if (shop) {
         await shop.updateOne({
@@ -573,4 +621,5 @@ export {
   getEventsDetails,
   appointmentCompleted,
   appointmentFailed,
+  getPetDoctorAppointments,
 };
