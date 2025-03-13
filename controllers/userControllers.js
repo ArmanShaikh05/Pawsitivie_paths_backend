@@ -51,19 +51,25 @@ const getUserDetails = async (req, res, next) => {
       .populate("ownedPets")
       .populate("notifications")
       .populate({
-        path:"posts",
+        path: "posts",
         populate: {
           path: "userId likedBy",
-          select:"profilePic userName userId"
-        }
-
-      }).populate({
-        path:"bookmarkedPosts",
+          select: "profilePic userName userId",
+        },
+      })
+      .populate({
+        path: "bookmarkedPosts",
         populate: {
           path: "userId likedBy",
-          select:"profilePic userName userId"
-        }
-      });;
+          select: "profilePic userName userId",
+        },
+      })
+      .populate({
+        path: "cartItems",
+        populate: {
+          path: "productId shopId",
+        },
+      });
 
     if (!user)
       return res.status(400).json({
@@ -72,13 +78,13 @@ const getUserDetails = async (req, res, next) => {
       });
 
     const friendRequests = await FriendRequests.find({
-      $or:[
-        {receiverId: user?._id,},
+      $or: [
+        { receiverId: user?._id },
         {
           senderId: user?._id,
-          status:"accepted"
-        }
-      ]
+          status: "accepted",
+        },
+      ],
     });
 
     res.status(200).json({
@@ -98,23 +104,23 @@ const getUserDetails = async (req, res, next) => {
 const getUserDetailsById = async (req, res, next) => {
   try {
     const { id } = req.body;
-    const user = await User.findOne({userId:id})
+    const user = await User.findOne({ userId: id })
       .populate("ownedPets")
       .populate("notifications")
       .populate({
-        path:"posts",
+        path: "posts",
         populate: {
           path: "userId likedBy",
-          select:"profilePic userName userId"
-        }
-
-      }).populate({
-        path:"bookmarkedPosts",
+          select: "profilePic userName userId",
+        },
+      })
+      .populate({
+        path: "bookmarkedPosts",
         populate: {
           path: "userId likedBy",
-          select:"profilePic userName userId"
-        }
-      });;
+          select: "profilePic userName userId",
+        },
+      });
 
     if (!user)
       return res.status(400).json({
@@ -123,13 +129,13 @@ const getUserDetailsById = async (req, res, next) => {
       });
 
     const friendRequests = await FriendRequests.find({
-      $or:[
-        {receiverId: user?._id,},
+      $or: [
+        { receiverId: user?._id },
         {
           senderId: user?._id,
-          status:"accepted"
-        }
-      ]
+          status: "accepted",
+        },
+      ],
     });
 
     res.status(200).json({
