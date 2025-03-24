@@ -4,6 +4,7 @@ import { Review } from "../models/reviewModel.js";
 import { ShopOwner } from "../models/shopOwnerModel.js";
 import { v2 as cloudinary } from "cloudinary";
 import { User } from "../models/userModels.js";
+import axios from "axios";
 
 const addShopProduct = async (req, res, next) => {
   try {
@@ -131,10 +132,74 @@ const getProductData = async (req, res, next) => {
         message: "product not found",
       });
 
+    // Implement Recommendation System using Gemini Ai
+
+    let recommendedProducts;
+    const allProducts = await Product.find();
+
+    const productList = allProducts
+      .filter((p) => p._id.toString() !== productId) // Exclude the current product
+      .map((p) => ({
+        id: p._id,
+        name: p.productName,
+        category: p.productCategory,
+        petType: p.petType,
+        material: p.productMaterial,
+        price: p.productPrice,
+        availableSizes: p.availableSizes,
+        inStock: p.inStock,
+      }));
+
+    try {
+      const response = await axios.post(
+        `${process.env.GEMINI_API_URL}?key=${process.env.GEMINI_API_KEY}`,
+        {
+          contents: [
+            {
+              parts: [
+                {
+                  text: `Based on this product's details:
+                  - Name: ${product.productName}
+                  - Category: ${product.productCategory}
+                  - Pet Type: ${product.petType}
+                  - Material: ${product.productMaterial}
+                  - Price: ${product.productPrice}
+                  - Available Sizes: ${product.availableSizes.join(", ")}
+                  - In Stock: ${product.inStock ? "Yes" : "No"}
+                  
+                  Recommend the **best 5 similar products** from this list: ${JSON.stringify(
+                    productList
+                  )}.
+                  Only return the product IDs as a JSON array, without any markdown formatting.Do not give empty array as a response. Try to find atleast one matching product from the list.`,
+                },
+              ],
+            },
+          ],
+        }
+      );
+
+      let aiResponse =
+        response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      // Clean AI Response: Remove extra characters, Markdown, and formatting
+      aiResponse = aiResponse.replace(/```json|```/g, "").trim(); // Remove Markdown blocks
+
+      const recommendedProductIds = JSON.parse(aiResponse);
+
+      recommendedProducts = await Product.find({
+        _id: { $in: recommendedProductIds },
+      });
+
+    } catch (error) {
+      console.log("Error in recommending pets", error);
+    }
+
     res.status(200).json({
       success: true,
       data: product,
+      recommendedProducts,
     });
+
   } catch (error) {
     console.log(error);
     res.status(200).json({

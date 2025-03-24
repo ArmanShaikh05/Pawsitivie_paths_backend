@@ -102,7 +102,6 @@ const editShopDetails = async (req, res, next) => {
 
     const {
       shopName,
-      shopEmail,
       shopAddress,
       shopContact,
       userId,
@@ -166,7 +165,6 @@ const editShopDetails = async (req, res, next) => {
     // Adding to Database
     await shopOwner.updateOne({
       shopName,
-      shopEmail,
       shopAddress,
       phone: shopContact,
       userId,
@@ -571,6 +569,42 @@ export const postShopReview = async (req, res, next) => {
     console.log(error);
     res.json({
       success: false,
+    });
+  }
+};
+
+export const checkEmailBeforeLogin = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    console.log(email);
+
+    const shop = await ShopOwner.findOne({
+      shopEmail: email,
+    });
+
+    if (!shop) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is not registered as Pet Shop",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Email is registered as Pet Shop",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
     });
   }
 };

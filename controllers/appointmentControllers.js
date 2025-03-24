@@ -8,6 +8,7 @@ import { User } from "../models/userModels.js";
 import { sendNotification } from "../socket/socketManager.js";
 import { combineDateTime } from "../utils/feature.js";
 import moment from "moment";
+import { resend } from "../server.js";
 
 const createShopAppointment = async (req, res, next) => {
   try {
@@ -243,7 +244,7 @@ const getUserpAppointmentDetails = async (req, res, next) => {
 
 const acceptAppointment = async (req, res, next) => {
   try {
-    const { appointmentId, clientId, appointmentDate } = req.body;
+    const { appointmentId, clientId, appointmentDate,appointmentTime,clientName,clientEmail } = req.body;
 
     const appointment = await Appointments.findById(appointmentId);
 
@@ -289,6 +290,50 @@ const acceptAppointment = async (req, res, next) => {
     };
 
     sendNotification(clientId, notiData);
+
+    // Sending Email
+    const emailHTML = `
+        <div style="font-family: Arial, sans-serif; color: #333; padding: 20px;">
+          <h2 style="color: #4CAF50;">Appointment Accepted</h2>
+          <p>Dear <strong>${clientName}</strong>,</p>
+    
+          <p>We are glad to inform you that your appointment request has been <strong>accepted</strong>. Below are the details:</p>
+    
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr>
+              <td style="padding: 8px; border: 1px solid #ddd;"><strong>Subject:</strong></td>
+              <td style="padding: 8px; border: 1px solid #ddd;">Appointment scheduled successfully</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; border: 1px solid #ddd;"><strong>Date:</strong></td>
+              <td style="padding: 8px; border: 1px solid #ddd;">${moment(
+                appointmentDate
+              ).format("MMM Do YYYY")}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; border: 1px solid #ddd;"><strong>Time:</strong></td>
+              <td style="padding: 8px; border: 1px solid #ddd;">${moment(
+                appointmentTime
+              ).format("LT")}</td>
+            </tr>
+          </table>
+    
+          <p>Try not to miss the appointment. If you have any questions, please contact us.</p>
+    
+          <p>Best regards,</p>
+          <p><strong>Pawsitive Paths</strong></p>
+        </div>
+      `;
+
+    // Sending Email
+    const emailResponse = await resend.emails.send({
+      from: process.env.SENDER_EMAIL, // Use the email you verified in Resend
+      to: clientEmail,
+      subject: "Appointment Scheduled",
+      html: emailHTML,
+    });
+
+    console.log(emailResponse);
 
     res.status(200).json({ success: true });
   } catch (error) {
@@ -374,7 +419,7 @@ const rejectAppointment = async (req, res, next) => {
           <tr>
             <td style="padding: 8px; border: 1px solid #ddd;"><strong>Time:</strong></td>
             <td style="padding: 8px; border: 1px solid #ddd;">${moment(
-              new Date(appointmentTime)
+              appointmentTime
             ).format("LT")}</td>
           </tr>
           <tr>
@@ -388,17 +433,19 @@ const rejectAppointment = async (req, res, next) => {
         <p>We apologize for any inconvenience. If you have any questions, please contact us.</p>
 
         <p>Best regards,</p>
-        <p><strong>Your Business Name</strong></p>
+        <p><strong>Pawsitive Paths</strong></p>
       </div>
     `;
 
     // Sending Email
-    // await resend.emails.send({
-    //   from: process.env.SENDER_EMAIL, // Use the email you verified in Resend
-    //   to: clientEmail,
-    //   subject: "Appointment Rejected",
-    //   html: emailHTML,
-    // });
+    const emailResponse = await resend.emails.send({
+      from: process.env.SENDER_EMAIL, // Use the email you verified in Resend
+      to: clientEmail,
+      subject: "Appointment Rejected",
+      html: emailHTML,
+    });
+
+    console.log(emailResponse);
 
     // Sending App Notification
     const providerNotification = await Notifications.create({
@@ -498,7 +545,8 @@ const getEventsDetails = async (req, res, next) => {
         .populate({
           path: "shopRecieverId",
           select: "shopName shopAddress phone",
-        }).populate("doctorId");
+        })
+        .populate("doctorId");
     }
 
     if (!appointments || appointments.length === 0)

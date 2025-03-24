@@ -1,3 +1,4 @@
+import axios from "axios";
 import { UploadShopPetImages } from "../middlewares/cloudinary.js";
 import { Review } from "../models/reviewModel.js";
 import { ShopOwner } from "../models/shopOwnerModel.js";
@@ -8,6 +9,7 @@ import { v2 as cloudinary } from "cloudinary";
 const getPetDetails = async (req, res, next) => {
   try {
     const { id } = req.params;
+    
     const shopPet = await ShopPets.findById(id).populate({
       path: "reviews",
       populate: {
@@ -22,14 +24,84 @@ const getPetDetails = async (req, res, next) => {
         message: "Shop Pet not found",
       });
 
+    // Implement Recommendation System using Gemini Ai
+
+    const petData = await ShopPets.find();
+    let recommendedPets
+
+    const petList = petData
+      .filter((pet) => pet._id.toString() !== id)
+      .map((pet) => ({
+        id: pet._id,
+        name: pet.petName,
+        breed: pet.petBreed,
+        age: pet.petAge,
+        size: pet.petSize,
+        gender: pet.petGender,
+        color: pet.petColor,
+        price: pet.petPrice,
+        location: pet.petLocation,
+        category: pet.petCategory,
+        vaccinated: pet.isVaccinated,
+        dewormed: pet.isDewormed,
+      }));
+
+    try {
+      const response = await axios.post(
+        `${process.env.GEMINI_API_URL}?key=${process.env.GEMINI_API_KEY}`,
+        {
+          contents: [
+            {
+              parts: [
+                {
+                  text: `Based on this user's preferences:
+                - Size: ${shopPet.petSize}
+                - Gender: ${shopPet.petGender}
+                - Color: ${shopPet.petColor}
+                - Budget: ${shopPet.petPrice}
+                - Vaccinated: ${shopPet.isVaccinated ? "Yes" : "No"}
+                - Dewormed: ${shopPet.isDewormed ? "Yes" : "No"}
+                
+                Recommend the **best 7 pets** from this list: ${JSON.stringify(
+                  petList
+                )}.
+                Only return the pet IDs as a JSON array. Do not give empty array as a response. Try to find atleast one matching pet from the list.`,
+                },
+              ],
+            },
+          ],
+        }
+      );
+
+      let aiResponse =
+        response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+
+      // Clean AI Response: Remove extra characters, Markdown, and formatting
+      aiResponse = aiResponse.replace(/```json|```/g, "").trim(); // Remove Markdown blocks
+
+      const recommendedPetIds = JSON.parse(aiResponse);
+
+       recommendedPets = await ShopPets.find({
+        _id: { $in: recommendedPetIds },
+      });
+      
+    } catch (error) {
+      console.log("Error in recommending pets", error);
+    }
+    // console.log("✅ Recommended Pets:", recommendedPets);
+
     res.status(200).json({
       success: true,
       data: shopPet,
+      recommendedPets,
     });
   } catch (error) {
+    console.log(error)
     res.json({
       success: false,
     });
+    
   }
 };
 

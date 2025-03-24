@@ -87,7 +87,6 @@ export const editDoctorDetails = async (req, res, next) => {
 
     const {
       name,
-      email,
       address,
       bio,
       mobileNumber,
@@ -145,7 +144,6 @@ export const editDoctorDetails = async (req, res, next) => {
     // Adding to Database
     await petDoctor.updateOne({
       userName: name,
-      email: email || "",
       userId,
       address: address || "",
       bio: bio || "",
@@ -242,7 +240,7 @@ export const getSingleDoctorByUserId = async (req, res, next) => {
       path: "reviews",
       populate: {
         path: "userId",
-        select:"profilePic userName"
+        select: "profilePic userName",
       },
     });
 
@@ -613,6 +611,40 @@ export const postDoctorReview = async (req, res, next) => {
     console.log(error);
     res.json({
       success: false,
+    });
+  }
+};
+
+export const checkEmailBeforeLogin = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    const doctor = await PetDoctors.findOne({
+      email: email,
+    });
+
+    if (!doctor) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is not registered as Pet Doctor",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Email is registered as Pet Doctor",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
     });
   }
 };

@@ -16,6 +16,7 @@ import notificationRouter from "./routes/notificationRoutes.js";
 import postsRouter from "./routes/postsRoutes.js"
 import chattingRouter from "./routes/chattingRoutes.js"
 import petDoctorRouter from "./routes/petDoctorRoutes.js"
+import OtpRouter from "./routes/otpRoutes.js"
 import { v2 as cloudinary } from "cloudinary";
 import Stripe from "stripe";
 import http from "http";
@@ -69,6 +70,7 @@ server.use("/api/v1/notifications", notificationRouter);
 server.use("/api/v1/posts", postsRouter);
 server.use("/api/v1/chats", chattingRouter);
 server.use("/api/v1/doctor", petDoctorRouter);
+server.use("/api/v1/otp", OtpRouter);
 
 server.get("/", (req, res) => {
   res.send("Hello World");

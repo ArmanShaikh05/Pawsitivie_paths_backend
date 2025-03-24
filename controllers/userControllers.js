@@ -169,16 +169,8 @@ const editUser = async (req, res, next) => {
         message: "User not found",
       });
 
-    const {
-      name,
-      email,
-      DOB,
-      address,
-      bio,
-      favouritePets,
-      mobileNumber,
-      userId,
-    } = req.body;
+    const { name, DOB, address, bio, favouritePets, mobileNumber, userId } =
+      req.body;
 
     if (file) {
       const folderName = user.userName + "-" + user.uid;
@@ -197,7 +189,6 @@ const editUser = async (req, res, next) => {
 
     await user.updateOne({
       userName: name,
-      email,
       userId,
       DOB: DOB || "",
       bio: bio || "",
@@ -1328,6 +1319,40 @@ const removeFriend = async (req, res, next) => {
 
     return res.status(500).json({
       success: false,
+    });
+  }
+};
+
+export const checkEmailBeforeLogin = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    const user = await User.findOne({
+      email: email,
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is not registered as User",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Email is registered as User",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
     });
   }
 };

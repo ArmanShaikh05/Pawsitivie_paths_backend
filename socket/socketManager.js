@@ -1,4 +1,5 @@
 import { Server } from "socket.io";
+import { cleanMessage } from "../utils/filterBadWords.js";
 
 let io;
 
@@ -19,7 +20,7 @@ const initializeSocket = (server) => {
     // When a user joins, save their userId
     socket.on("userOnline", (userId) => {
       usersOnline[userId] = socket.id; // Map userId to socketId
-      io.emit("updateUserStatus", {usersOnline});
+      io.emit("updateUserStatus", { usersOnline });
     });
 
     socket.on("disconnect", () => {
@@ -28,7 +29,7 @@ const initializeSocket = (server) => {
       );
       if (userId) {
         delete usersOnline[userId]; // Remove user from tracking
-        io.emit("updateUserStatus", {usersOnline});
+        io.emit("updateUserStatus", { usersOnline });
       }
       console.log(`User Disconnected: ${socket.id}`);
     });
@@ -53,4 +54,9 @@ const sendRealTimeFriendRequest = (receiverId, messageData) => {
   }
 };
 
-export { initializeSocket, sendNotification, sendRealTimeMessage,sendRealTimeFriendRequest };
+export {
+  initializeSocket,
+  sendNotification,
+  sendRealTimeMessage,
+  sendRealTimeFriendRequest,
+};

@@ -1,12 +1,13 @@
 import express from "express";
 import { uploadMiddleware } from "../middlewares/multer.js";
 import { bookmarkPost, createPost, deletePost, editPost, getAllPosts, likeUnlikePost } from "../controllers/postsController.js";
+import { moderateContent, moderateImages } from "../middlewares/contentModeration.js";
 
 const router = express.Router()
 
 
 
-router.post("/create-post",uploadMiddleware.array("files",10),createPost)
+router.post("/create-post",uploadMiddleware.array("files",10), moderateImages ,moderateContent, createPost)
 
 router.get("/all-posts",getAllPosts)
 

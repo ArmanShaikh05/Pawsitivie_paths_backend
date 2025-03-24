@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  checkEmailBeforeLogin,
   checkPetDoctorUserIdAvailable,
   createNewDoctor,
   createPetDoctorAppointment,
@@ -27,5 +28,6 @@ router.get("/get-doctor-detail-by-userId", getSingleDoctorByUserId);
 router.post("/create-doctor-appointment", createPetDoctorAppointment);
 router.get("/get-doctor-chart-details", getPetDoctorChartData);
 router.post("/post-review", postDoctorReview);
+router.post("/check-email-before-login",checkEmailBeforeLogin)
 
 export default router;

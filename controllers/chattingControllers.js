@@ -6,6 +6,7 @@ import { Notifications } from "../models/notificationsModel.js";
 import { User } from "../models/userModels.js";
 import { sendNotification, sendRealTimeMessage } from "../socket/socketManager.js";
 import { v2 as cloudinary } from "cloudinary";
+import { cleanMessage } from "../utils/filterBadWords.js";
 
 const createConversation = async (req, res, next) => {
   try {
@@ -156,7 +157,7 @@ const sendMessage = async (req, res, next) => {
       sender: senderId,
       receiver: recieverId,
       conversationId: conversationId,
-      text: message,
+      text: cleanMessage(message),
       media: media,
     });
 

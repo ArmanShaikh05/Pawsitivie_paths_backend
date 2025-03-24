@@ -5,6 +5,7 @@ import {
   addPetToWhishlist,
   addProductToWhishlist,
   addShopToWhishlist,
+  checkEmailBeforeLogin,
   checkoutCartItems,
   checkUserIdAvailable,
   createNewUser,
@@ -91,5 +92,7 @@ router.get("/get-all-recieved-requests", getAllRecievedRequests);
 router.post("/remove-friend", removeFriend);
 
 router.post("/reject-friend-request", rejectFriendRequest);
+
+router.post("/check-email-before-login",checkEmailBeforeLogin)
 
 export default router;
