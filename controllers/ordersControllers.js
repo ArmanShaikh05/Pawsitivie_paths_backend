@@ -73,9 +73,9 @@ const getUserOrderHistory = async (req, res, next) => {
       .populate({
         path: "products",
         populate: {
-          path: "productId",
+          path: "productId shopId",
         },
-      })
+      }).populate("userId")
 
     if (!orders || orders.length === 0) {
       return res.status(400).json({

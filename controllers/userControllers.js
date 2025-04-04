@@ -732,22 +732,59 @@ const updateShippingAddress = async (req, res) => {
 
 const checkoutCartItems = async (req, res) => {
   try {
-    const { products } = req.body;
-    const lineItems = products.map((product) => ({
-      price_data: {
-        currency: "inr",
-        product_data: {
-          name: product.productId.productName,
-          images: [product?.productId?.productImages?.[0]?.url],
-        },
-        unit_amount: Math.round(product.productId.productPrice * 100),
-      },
-      quantity: product.quantity,
-    }));
+    const { products, shippingCharge, discountAmount, taxAmount } = req.body;
+    // const lineItems = products.map((product) => ({
+    //   price_data: {
+    //     currency: "inr",
+    //     product_data: {
+    //       name: product.productId.productName,
+    //       images: [product?.productId?.productImages?.[0]?.url],
+    //     },
+    //     unit_amount: Math.round(product.productId.productPrice * 100),
+    //   },
+    //   quantity: product.quantity,
+    // }));
+
+    let totalAmount = products.reduce((total, product) => {
+      return total + product.productId.productPrice * product.quantity;
+    }, 0);
+
+    // Add shipping charge
+    if (shippingCharge && Number.parseInt(shippingCharge.slice(1)) > 0) {
+      totalAmount += Number(shippingCharge.replace(/[^0-9.-]+/g, ""));
+    }
+
+    // Subtract discount amount
+    if (discountAmount && discountAmount > 0) {
+      totalAmount -= discountAmount;
+    }
+
+    if (taxAmount && Number.parseInt(taxAmount.slice(1)) > 0) {
+      totalAmount += Number(taxAmount.replace(/[^0-9.-]+/g, ""));
+    }
+
+    // Ensure the total is at least 1 (Stripe doesn't allow 0 or negative amounts)
+    if (totalAmount < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Total amount must be at least 1 INR.",
+      });
+    }
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
-      line_items: lineItems,
+      line_items: [
+        {
+          price_data: {
+            currency: "inr",
+            product_data: {
+              name: "Total Payment",
+            },
+            unit_amount: Math.round(totalAmount * 100), // Convert to paise
+          },
+          quantity: 1,
+        },
+      ],
       mode: "payment",
       success_url: process.env.SUCCESS_URL,
       cancel_url: process.env.FAILURE_URL,
@@ -757,6 +794,11 @@ const checkoutCartItems = async (req, res) => {
       success: true,
       message: "Checkout session created",
       sessionId: session.id,
+      shippingDetails: {
+        shippingCharge,
+        discountAmount,
+        taxAmount,
+      },
     });
   } catch (error) {
     console.log(error);
@@ -769,8 +811,9 @@ const checkoutCartItems = async (req, res) => {
 
 const emptyCartAfterPayment = async (req, res) => {
   try {
-    const { userId, cartItems } = req.body;
+    const { userId, cartItems,shippingDetails } = req.body;
 
+    console.log(shippingDetails)
     // Validate input
     if (!userId || !Array.isArray(cartItems) || cartItems.length === 0) {
       return res.status(400).json({
@@ -808,6 +851,7 @@ const emptyCartAfterPayment = async (req, res) => {
       userId,
       products: productData,
       amount,
+      shippingDetails,
     });
 
     // Process product updates and shop revenue updates

@@ -39,6 +39,17 @@ const OrdersSchema = new Schema(
       ],
       default: "pending",
     },
+    shippingDetails: {
+      shippingCharge: {
+        type: String,
+      },
+      discountAmount: {
+        type: String,
+      },
+      taxAmount: {
+        type: String,
+      },
+    },
   },
   {
     timestamps: true,
